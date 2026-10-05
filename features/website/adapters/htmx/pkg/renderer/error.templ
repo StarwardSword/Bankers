@@ -1,0 +1,11 @@
+package renderer
+
+templ errorIndex(err string) {
+	<div class="card text-white bg-danger mb-3">
+		<div class="card-header">Произошла ошибка</div>
+		<div class="card-body">
+			// <h4 class="card-title">Danger card title</h4>
+			<p class="card-text"> {err} </p>
+		</div>
+	</div>
+}

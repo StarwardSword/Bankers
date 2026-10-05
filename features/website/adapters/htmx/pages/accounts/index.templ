@@ -1,0 +1,117 @@
+package accounts
+
+import "fmt"
+import "strconv"
+import "github.com/google/uuid"
+
+type account struct {
+	id       uuid.UUID
+	currency int64
+}
+
+templ index(acc account) {
+	<!DOCTYPE html>
+	<html>
+		<head>
+			<link
+				rel="stylesheet"
+				href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.8/dist/flatly/bootstrap.min.css"
+				integrity="sha384-MZ3pnZEBOL1wAG2nrP+M1A9LCApF229c39UC+1T3B96aI3VjuAWMeb1I99GMJacE"
+				crossorigin="anonymous"
+			/>
+			<link
+				rel="stylesheet"
+				href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+				integrity="sha384-CK2SzKma4jA5H/MXDUU7i1TqZlCFaD4T01vtyDFvPlD97JQyS+IsSh1nI2EFbpyk"
+				crossorigin="anonymous"
+			/>
+			<script
+				src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+				integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+				crossorigin="anonymous"
+				defer
+			></script>
+			<script
+				src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js"
+				integrity="sha384-/TgkGk7p307TH7EXJDuUlgG3Ce1UVolAOFopFekQkkXihi5u/6OCvVKyz1W+idaz"
+				crossorigin="anonymous"
+			></script>
+		</head>
+		<body>
+			<div class="d-flex flex-row justify-content-center align-items-center vh-100">
+				<div id="main-contents" class="border p-5 rounded" style="width: 35%;">
+					<h4>Счет: { acc.id.String() } </h4>
+					<h5 id="balance-header">Баланс: { strconv.FormatInt(acc.currency, 10) } </h5>
+					<hr class="mb-3"/>
+					@transferBlock(acc.id)
+				</div>
+			</div>
+		</body>
+	</html>
+}
+
+templ transferBlock(sourceAccId uuid.UUID) {
+	<div id="transfer-block">
+		<h5 class="m-1">Перевести:  </h5>
+		<form
+			class="d-flex flex-column"
+			hx-target="#transfer-block"
+			hx-post="/accounts/transfer"
+			hx-swap="outerHTML"
+		>
+			<input name="source" id="uid-container" value={ sourceAccId.String() } style="display: none;"/>
+			<div id="target-uid-container" class="form-floating m-1">
+				<input
+					name="target"
+					type="text"
+					required
+					pattern="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+					title="Номер счета в формате xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+					class="form-control"
+					id="target-uid"
+					placeholder=""
+					autocomplete="off"
+				/>
+				<label for="target-uid">Счет для перевода</label>
+			</div>
+			<div id="amount-container" class="form-floating m-1">
+				<input name="amount" type="number" min="1" step="1" required class="form-control" id="amount" placeholder="" autocomplete="off"/>
+				<label for="amount">Сумма</label>
+			</div>
+			<button type="submit" class="btn btn-primary m-1">Перевести  </button>
+		</form>
+	</div>
+}
+
+templ transferResult(acc account, succ bool, msg string) {
+	<div
+		hx-trigger="load delay:8s"
+		hx-target="this"
+		hx-swap="outerHTML"
+		hx-get={ fmt.Sprintf("/accounts/transfer/%s", acc.id.String()) }
+		class="w-100"
+	>
+		if succ {
+			<div class="card text-white bg-success mb-3">
+				<div class="card-body">
+					<h4 class="card-title"><i class="bi bi-check-circle"></i> Успешный успех </h4>
+					<p class="card-text">{ msg }</p>
+				</div>
+			</div>
+			<h5 id="balance-header" hx-swap-oob="outerHTML">Баланс: { strconv.FormatInt(acc.currency, 10) } </h5>
+		} else {
+			<div class="card text-white bg-danger mb-3">
+				<div class="card-body">
+					<h4 class="card-title"><i class="bi bi-x-circle"></i> Провальный провал </h4>
+					<p class="card-text">{ msg }</p>
+				</div>
+			</div>
+		}
+		<button
+			class="btn btn-outline-secondary w-100"
+			hx-get={ fmt.Sprintf("/accounts/transfer/%s", acc.id.String()) }
+			hx-target="closest div"
+			hx-swap="outerHTML"
+		>Вернуться </button>
+	</div>
+}

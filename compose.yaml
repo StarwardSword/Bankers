@@ -1,0 +1,31 @@
+services:
+  db:
+    container_name: ${POSTGRES_CONTAINER:-postgres}
+    image: postgres:${POSTGRES_VERSION:-18.6}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  test_db:
+    container_name: ${POSTGRES_TEST_DB:-postgres_test}
+    image: postgres:${POSTGRES_VERSION:-18.6}
+    ports:
+      - "${POSTGRES_TEST_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_TEST_DB}
+
+volumes:
+  pgdata:
+    name: ${DOCKER_POSTGRES_VOLUME}
